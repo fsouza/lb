@@ -52,9 +52,10 @@ func (p *Pool) Push(x interface{}) {
 }
 
 func (p *Pool) Pop() interface{} {
+	l := p.Len()-1
 	p.mut.Lock()
-	b := p.backends[p.Len()-1]
-	p.backends = p.backends[:p.Len()-1]
+	b := p.backends[l]
+	p.backends = p.backends[:l]
 	p.mut.Unlock()
 	b.i = -1
 	return b
