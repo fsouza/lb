@@ -88,6 +88,6 @@ func (l *LoadBalancer) requestFinished(b *Backend) {
 
 func (l *LoadBalancer) handleFinishes() {
 	for b := range l.done {
-		l.requestFinished(b)
+		go l.requestFinished(b)
 	}
 }
