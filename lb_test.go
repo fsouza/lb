@@ -60,7 +60,7 @@ func TestPoolLen(t *testing.T) {
 		{load: counter{2}},
 		{load: counter{3}},
 	}
-	p := Pool(b)
+	p := Pool{backends: b}
 	if p.Len() != len(b) {
 		t.Errorf("Pool.Len: Want %d. Got %d.", len(b), p.Len())
 	}
@@ -72,7 +72,7 @@ func TestPoolLess(t *testing.T) {
 		{load: counter{1}},
 		{load: counter{3}},
 	}
-	p := Pool(b)
+	p := Pool{backends: b}
 	tests := []struct {
 		i, j int
 		less bool
@@ -99,7 +99,7 @@ func TestPoolSwap(t *testing.T) {
 		{load: counter{1}},
 		{load: counter{3}},
 	}
-	p := Pool(b)
+	p := Pool{backends: b}
 	tests := []struct {
 		i, j int
 		less bool
@@ -120,7 +120,7 @@ func TestPoolSwap(t *testing.T) {
 
 func TestPoolPush(t *testing.T) {
 	bs := make([]*Backend, 0, 1)
-	p := Pool(bs)
+	p := Pool{backends: bs}
 	b := Backend{i: -1}
 	p.Push(&b)
 	if b.i != 0 {
@@ -137,7 +137,7 @@ func TestPoolPop(t *testing.T) {
 		{load: counter{1}, i: 1},
 		{load: counter{0}, i: 2},
 	}
-	p := Pool(bs)
+	p := Pool{backends: bs}
 	b := p.Pop().(*Backend)
 	if b.i != -1 {
 		t.Errorf("p.Pop() did not unset i. Want %d. Got %d.", -1, b.i)
@@ -153,7 +153,7 @@ func TestPoolPop(t *testing.T) {
 func TestPoolPQ(t *testing.T) {
 	expected := []int64{5, 6, 14, 1, 2, 0, 4}
 	bs := make([]*Backend, 0, len(expected))
-	p := Pool(bs)
+	p := Pool{backends: bs}
 	for i, e := range expected {
 		heap.Push(&p, &Backend{i: i, load: counter{e}})
 	}
@@ -168,12 +168,12 @@ func TestPoolPQ(t *testing.T) {
 
 func BenchmarkPoolPushAndPop(b *testing.B) {
 	for i := 1; i < b.N; i++ {
-		bs := make([]*Backend, 0, i / 2)
-		p := Pool(bs)
-		for j := 0; j < i / 2; j++ {
+		bs := make([]*Backend, 0, i/2)
+		p := Pool{backends: bs}
+		for j := 0; j < i/2; j++ {
 			heap.Push(&p, &Backend{i: j, load: counter{int64(i + j)}})
 		}
-		for j := 0; j < i / 2; j++ {
+		for j := 0; j < i/2; j++ {
 			heap.Pop(&p)
 		}
 	}
@@ -189,7 +189,7 @@ func TestNewLoadBalancer(t *testing.T) {
 	req, _ := http.NewRequest("GET", "http://globo.com/something/wrong", nil)
 	copy := *req
 	u, _ := url.Parse(server.URL)
-	lb.p[0].r.Director(&copy)
+	lb.p.backends[0].r.Director(&copy)
 	if copy.URL.Host != u.Host {
 		t.Errorf("LoadBalancer did not use reverse proxy. Want request host to be %q. Got %q.", u.Host, copy.URL.Host)
 	}
@@ -244,13 +244,13 @@ func TestLoadBalancerRequestFinished(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lb.p[0].load.increment()
-	b := lb.p[0]
+	lb.p.backends[0].load.increment()
+	b := lb.p.backends[0]
 	lb.requestFinished(b)
 	if b.load.val() != 0 {
 		t.Errorf("Wrong load after requestFinished. Want %d. Got %d", 0, b.load.val())
 	}
-	b2 := lb.p[0]
+	b2 := lb.p.backends[0]
 	if !reflect.DeepEqual(b2, b) {
 		t.Errorf("Wrong backend after requestFinished. Want %#v. Got %#v", b, b2)
 	}
@@ -261,15 +261,15 @@ func TestLoadBalancerHandleFinishes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lb.p[0].load.increment()
-	b := lb.p[0]
+	lb.p.backends[0].load.increment()
+	b := lb.p.backends[0]
 	lb.done <- b
 	close(lb.done)
 	time.Sleep(1e6)
 	if b.load.val() != 0 {
 		t.Errorf("Wrong load after requestFinished. Want %d. Got %d", 0, b.load.val())
 	}
-	b2 := lb.p[0]
+	b2 := lb.p.Pop().(*Backend)
 	if !reflect.DeepEqual(b2, b) {
 		t.Errorf("Wrong backend after requestFinished. Want %#v. Got %#v", b, b2)
 	}
