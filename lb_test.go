@@ -163,3 +163,15 @@ func TestPoolPQ(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkPoolPushAndPop(b *testing.B) {
+	p := Pool(nil)
+	for i := 1; i < b.N; i++ {
+		for j := 0; j < i / 2; j++ {
+			heap.Push(&p, &Backend{i: j, load: i + j})
+		}
+		for j := 0; j < i / 2; j++ {
+			heap.Pop(&p)
+		}
+	}
+}
