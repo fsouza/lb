@@ -7,26 +7,27 @@
 package lb
 
 import (
+	"container/heap"
 	"sync"
 	"testing"
 	"time"
 )
 
 func TestPoolIsSafe(t *testing.T) {
-	bs := make([]*Backend, 0, 20)
+	bs := make([]*Backend, 0, 200)
 	p := Pool{backends: bs}
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
-		for i := 0; i < 15; i++ {
-			p.Push(&Backend{})
+		for i := 0; i < 180; i++ {
+			heap.Push(&p, &Backend{})
 		}
 		wg.Done()
 	}()
 	time.Sleep(1e6)
 	go func() {
-		for i := 0; i < 10; i++ {
-			p.Pop()
+		for i := 0; i < 50; i++ {
+			heap.Pop(&p)
 		}
 		wg.Done()
 	}()
