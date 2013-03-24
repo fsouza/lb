@@ -13,7 +13,7 @@ import (
 
 type Backend struct {
 	i    int
-	load int
+	load counter
 	r    *httputil.ReverseProxy
 }
 
@@ -29,7 +29,7 @@ func (p *Pool) Len() int {
 }
 
 func (p *Pool) Less(i, j int) bool {
-	return (*p)[i].load < (*p)[j].load
+	return (*p)[i].load.val() < (*p)[j].load.val()
 }
 
 func (p *Pool) Swap(i, j int) {
@@ -76,13 +76,13 @@ func NewLoadBalancer(hosts ...string) (*LoadBalancer, error) {
 func (l *LoadBalancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b := heap.Pop(&l.p).(*Backend)
 	go b.handle(w, r, l.done)
-	b.load++
+	b.load.increment()
 	heap.Push(&l.p, b)
 }
 
 func (l *LoadBalancer) requestFinished(b *Backend) {
 	heap.Remove(&l.p, b.i)
-	b.load--
+	b.load.decrement()
 	heap.Push(&l.p, b)
 }
 
