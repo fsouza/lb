@@ -5,10 +5,12 @@
 package lb
 
 import (
+	"container/heap"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
 	"net/url"
+	"sort"
 	"testing"
 )
 
@@ -144,5 +146,20 @@ func TestPoolPop(t *testing.T) {
 	}
 	if p.Len() != 2 {
 		t.Errorf("p.Pop() did not remove the element from the slice. Want %d. Got %d.", 2, p.Len())
+	}
+}
+
+func TestPoolPQ(t *testing.T) {
+	p := Pool(nil)
+	expected := []int{5, 6, 14, 1, 2, 0, 4}
+	for i, e := range expected {
+		heap.Push(&p, &Backend{i: i, load: e})
+	}
+	sort.Ints(expected)
+	for _, e := range expected {
+		b := heap.Pop(&p).(*Backend)
+		if b.load != e {
+			t.Errorf("Did not return the proper backend. Want %d. Got %d.", e, b.load)
+		}
 	}
 }
