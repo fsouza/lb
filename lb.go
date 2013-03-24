@@ -39,7 +39,8 @@ func (p *Pool) Swap(i, j int) {
 func (p *Pool) Push(x interface{}) {
 	b := x.(*Backend)
 	b.i = p.Len()
-	*p = append(*p, b)
+	*p = (*p)[:b.i+1]
+	(*p)[b.i] = b
 }
 
 func (p *Pool) Pop() interface{} {

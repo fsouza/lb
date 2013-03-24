@@ -118,7 +118,7 @@ func TestPoolSwap(t *testing.T) {
 }
 
 func TestPoolPush(t *testing.T) {
-	var bs []*Backend
+	bs := make([]*Backend, 0, 1)
 	p := Pool(bs)
 	b := Backend{i: -1}
 	p.Push(&b)
@@ -150,8 +150,9 @@ func TestPoolPop(t *testing.T) {
 }
 
 func TestPoolPQ(t *testing.T) {
-	p := Pool(nil)
 	expected := []int{5, 6, 14, 1, 2, 0, 4}
+	bs := make([]*Backend, 0, len(expected))
+	p := Pool(bs)
 	for i, e := range expected {
 		heap.Push(&p, &Backend{i: i, load: e})
 	}
@@ -165,8 +166,9 @@ func TestPoolPQ(t *testing.T) {
 }
 
 func BenchmarkPoolPushAndPop(b *testing.B) {
-	p := Pool(nil)
 	for i := 1; i < b.N; i++ {
+		bs := make([]*Backend, 0, i / 2)
+		p := Pool(bs)
 		for j := 0; j < i / 2; j++ {
 			heap.Push(&p, &Backend{i: j, load: i + j})
 		}
