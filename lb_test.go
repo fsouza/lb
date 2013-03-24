@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
 )
 
 type FakeHandler struct {
@@ -247,6 +248,25 @@ func TestLoadBalancerRequestFinished(t *testing.T) {
 	lb.p[0].load++
 	b := lb.p[0]
 	lb.requestFinished(b)
+	if b.load != 0 {
+		t.Errorf("Wrong load after requestFinished. Want %d. Got %d", 0, b.load)
+	}
+	b2 := lb.p[0]
+	if !reflect.DeepEqual(b2, b) {
+		t.Errorf("Wrong backend after requestFinished. Want %#v. Got %#v", b, b2)
+	}
+}
+
+func TestLoadBalancerHandleFinishes(t *testing.T) {
+	lb, err := NewLoadBalancer("http://localhost:8080")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lb.p[0].load++
+	b := lb.p[0]
+	lb.done <- b
+	close(lb.done)
+	time.Sleep(1e6)
 	if b.load != 0 {
 		t.Errorf("Wrong load after requestFinished. Want %d. Got %d", 0, b.load)
 	}

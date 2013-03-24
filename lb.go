@@ -69,6 +69,7 @@ func NewLoadBalancer(hosts ...string) (*LoadBalancer, error) {
 		}
 		heap.Push(&lb.p, &Backend{r: httputil.NewSingleHostReverseProxy(u)})
 	}
+	go lb.handleFinishes()
 	return &lb, nil
 }
 
@@ -83,4 +84,10 @@ func (l *LoadBalancer) requestFinished(b *Backend) {
 	heap.Remove(&l.p, b.i)
 	b.load--
 	heap.Push(&l.p, b)
+}
+
+func (l *LoadBalancer) handleFinishes() {
+	for b := range l.done {
+		l.requestFinished(b)
+	}
 }
