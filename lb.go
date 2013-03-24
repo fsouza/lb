@@ -12,11 +12,11 @@ import (
 type Backend struct {
 	i    int
 	load int
-	R    *httputil.ReverseProxy
+	r    *httputil.ReverseProxy
 }
 
 func (b *Backend) handle(w http.ResponseWriter, r *http.Request, done chan<- *Backend) {
-	b.R.ServeHTTP(w, r)
+	b.r.ServeHTTP(w, r)
 	done <- b
 }
 
