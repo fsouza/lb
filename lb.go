@@ -5,8 +5,10 @@
 package lb
 
 import (
+	"container/heap"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 )
 
 type Backend struct {
@@ -45,4 +47,26 @@ func (p *Pool) Pop() interface{} {
 	b.i = -1
 	(*p) = (*p)[:p.Len()-1]
 	return b
+}
+
+type LoadBalancer struct {
+	p    Pool
+	done chan *Backend
+}
+
+func NewLoadBalancer(hosts ...string) (*LoadBalancer, error) {
+	backends := make([]*Backend, 0, len(hosts))
+	p := Pool(backends)
+	lb := LoadBalancer{
+		p:    p,
+		done: make(chan *Backend, len(hosts)),
+	}
+	for _, h := range hosts {
+		u, err := url.Parse(h)
+		if err != nil {
+			return nil, err
+		}
+		heap.Push(&lb.p, &Backend{r: httputil.NewSingleHostReverseProxy(u)})
+	}
+	return &lb, nil
 }

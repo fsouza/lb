@@ -30,7 +30,7 @@ func TestBackendHandle(t *testing.T) {
 	server := httptest.NewServer(&handler)
 	defer server.Close()
 	u, _ := url.Parse(server.URL)
-	b := Backend{R: httputil.NewSingleHostReverseProxy(u)}
+	b := Backend{r: httputil.NewSingleHostReverseProxy(u)}
 	path := "/hello"
 	req, _ := http.NewRequest("GET", path, nil)
 	recorder := httptest.NewRecorder()
@@ -173,5 +173,39 @@ func BenchmarkPoolPushAndPop(b *testing.B) {
 		for j := 0; j < i / 2; j++ {
 			heap.Pop(&p)
 		}
+	}
+}
+
+func TestNewLoadBalancer(t *testing.T) {
+	server1 := httptest.NewServer(&FakeHandler{msg: []byte("Hello from server 1.")})
+	defer server1.Close()
+	server2 := httptest.NewServer(&FakeHandler{msg: []byte("Hello from server 2.")})
+	defer server2.Close()
+	lb, err := NewLoadBalancer(server1.URL, server2.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, _ := http.NewRequest("GET", "http://globo.com/something/wrong", nil)
+	copy := *req
+	u1, _ := url.Parse(server1.URL)
+	lb.p[0].r.Director(&copy)
+	if copy.URL.Host != u1.Host {
+		t.Errorf("LoadBalancer did not use reverse proxy. Want request host to be %q. Got %q.", u1.Host, copy.URL.Host)
+	}
+	u2, _ := url.Parse(server2.URL)
+	copy = *req
+	lb.p[1].r.Director(&copy)
+	if copy.URL.Host != u2.Host {
+		t.Errorf("LoadBalancer did not use reverse proxy. Want request host to be %q. Got %q.", u2.Host, copy.URL.Host)
+	}
+}
+
+func TestNewLoadBalancerInvalidURL(t *testing.T) {
+	lb, err := NewLoadBalancer("http://%%%%.com")
+	if err == nil {
+		t.Error("Expected non-nil error, got <nil>.")
+	}
+	if lb != nil {
+		t.Errorf("Want <nil>. Got %#v.", *lb)
 	}
 }
