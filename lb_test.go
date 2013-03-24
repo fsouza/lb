@@ -225,7 +225,7 @@ func TestLoadBalancerServeHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lb.Handle(recorder, req)
+	lb.ServeHTTP(recorder, req)
 	<-lb.done
 	var h *FakeHandler
 	if len(h1.requests) > 0 {
