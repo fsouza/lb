@@ -78,3 +78,9 @@ func (l *LoadBalancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b.load++
 	heap.Push(&l.p, b)
 }
+
+func (l *LoadBalancer) requestFinished(b *Backend) {
+	heap.Remove(&l.p, b.i)
+	b.load--
+	heap.Push(&l.p, b)
+}

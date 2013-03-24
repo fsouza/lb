@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 	"net/url"
+	"reflect"
 	"sort"
 	"testing"
 )
@@ -235,5 +236,22 @@ func TestLoadBalancerServeHTTP(t *testing.T) {
 	}
 	if req.Method != "GET" {
 		t.Errorf("Wrong request method. Want %q. Got %q.", "GET", req.Method)
+	}
+}
+
+func TestLoadBalancerRequestFinished(t *testing.T) {
+	lb, err := NewLoadBalancer("http://localhost:8080")
+	if err != nil {
+		t.Fatal(err)
+	}
+	lb.p[0].load++
+	b := lb.p[0]
+	lb.requestFinished(b)
+	if b.load != 0 {
+		t.Errorf("Wrong load after requestFinished. Want %d. Got %d", 0, b.load)
+	}
+	b2 := lb.p[0]
+	if !reflect.DeepEqual(b2, b) {
+		t.Errorf("Wrong backend after requestFinished. Want %#v. Got %#v", b, b2)
 	}
 }
