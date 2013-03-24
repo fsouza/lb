@@ -179,26 +179,18 @@ func BenchmarkPoolPushAndPop(b *testing.B) {
 }
 
 func TestNewLoadBalancer(t *testing.T) {
-	server1 := httptest.NewServer(&FakeHandler{msg: []byte("Hello from server 1.")})
-	defer server1.Close()
-	server2 := httptest.NewServer(&FakeHandler{msg: []byte("Hello from server 2.")})
-	defer server2.Close()
-	lb, err := NewLoadBalancer(server1.URL, server2.URL)
+	server := httptest.NewServer(&FakeHandler{msg: []byte("Hello from server 1.")})
+	defer server.Close()
+	lb, err := NewLoadBalancer(server.URL)
 	if err != nil {
 		t.Fatal(err)
 	}
 	req, _ := http.NewRequest("GET", "http://globo.com/something/wrong", nil)
 	copy := *req
-	u1, _ := url.Parse(server1.URL)
+	u, _ := url.Parse(server.URL)
 	lb.p[0].r.Director(&copy)
-	if copy.URL.Host != u1.Host {
-		t.Errorf("LoadBalancer did not use reverse proxy. Want request host to be %q. Got %q.", u1.Host, copy.URL.Host)
-	}
-	u2, _ := url.Parse(server2.URL)
-	copy = *req
-	lb.p[1].r.Director(&copy)
-	if copy.URL.Host != u2.Host {
-		t.Errorf("LoadBalancer did not use reverse proxy. Want request host to be %q. Got %q.", u2.Host, copy.URL.Host)
+	if copy.URL.Host != u.Host {
+		t.Errorf("LoadBalancer did not use reverse proxy. Want request host to be %q. Got %q.", u.Host, copy.URL.Host)
 	}
 }
 
