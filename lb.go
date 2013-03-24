@@ -52,7 +52,7 @@ func (p *Pool) Push(x interface{}) {
 }
 
 func (p *Pool) Pop() interface{} {
-	l := p.Len()-1
+	l := p.Len() - 1
 	p.mut.Lock()
 	b := p.backends[l]
 	p.backends = p.backends[:l]
