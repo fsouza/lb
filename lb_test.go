@@ -50,3 +50,67 @@ func TestBackendHandle(t *testing.T) {
 		t.Errorf("Wrong request method. Want %q. Got %q.", "GET", req.Method)
 	}
 }
+
+func TestPoolLen(t *testing.T) {
+	b := []*Backend{
+		{load: 1},
+		{load: 2},
+		{load: 3},
+	}
+	p := Pool(b)
+	if p.Len() != len(b) {
+		t.Errorf("Pool.Len: Want %d. Got %d.", len(b), p.Len())
+	}
+}
+
+func TestPoolLess(t *testing.T) {
+	b := []*Backend{
+		{load: 2},
+		{load: 1},
+		{load: 3},
+	}
+	p := Pool(b)
+	tests := []struct {
+		i, j int
+		less bool
+	}{
+		{0, 1, false},
+		{1, 0, true},
+		{1, 2, true},
+		{0, 2, true},
+		{2, 1, false},
+		{0, 0, false},
+		{2, 0, false},
+	}
+	for _, tt := range tests {
+		got := p.Less(tt.i, tt.j)
+		if got != tt.less {
+			t.Errorf("Pool.Less(%d, %d). Want %v. Got %v.", tt.i, tt.j, tt.less, got)
+		}
+	}
+}
+
+func TestPoolSwap(t *testing.T) {
+	b := []*Backend{
+		{load: 2},
+		{load: 1},
+		{load: 3},
+	}
+	p := Pool(b)
+	tests := []struct {
+		i, j int
+		less bool
+	}{
+		{0, 1, true},
+		{0, 1, false},
+		{1, 2, false},
+		{1, 2, true},
+	}
+	for _, tt := range tests {
+		p.Swap(tt.i, tt.j)
+		got := p.Less(tt.i, tt.j)
+		if got != tt.less {
+			t.Errorf("Pool.Less(%d, %d) after Pool.Swap(%d, %d). Want %v. Got %v.", tt.i, tt.j, tt.i, tt.j, tt.less, got)
+		}
+	}
+}
