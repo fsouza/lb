@@ -114,3 +114,35 @@ func TestPoolSwap(t *testing.T) {
 		}
 	}
 }
+
+func TestPoolPush(t *testing.T) {
+	var bs []*Backend
+	p := Pool(bs)
+	b := Backend{i: -1}
+	p.Push(&b)
+	if b.i != 0 {
+		t.Errorf("p.Push() should set Backend.i. Want %d. Got %d.", 0, b.i)
+	}
+	if p.Len() != 1 {
+		t.Errorf("p.Push() should store backend. Want %d. Got %d.", 1, p.Len())
+	}
+}
+
+func TestPoolPop(t *testing.T) {
+	bs := []*Backend{
+		{load: 2, i: 0},
+		{load: 1, i: 1},
+		{load: 0, i: 2},
+	}
+	p := Pool(bs)
+	b := p.Pop().(*Backend)
+	if b.i != -1 {
+		t.Errorf("p.Pop() did not unset i. Want %d. Got %d.", -1, b.i)
+	}
+	if b.load != 0 {
+		t.Errorf("p.Pop() did not get the right element. Want %d. Got %d.", 0, b.load)
+	}
+	if p.Len() != 2 {
+		t.Errorf("p.Pop() did not remove the element from the slice. Want %d. Got %d.", 2, p.Len())
+	}
+}

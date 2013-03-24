@@ -10,6 +10,7 @@ import (
 )
 
 type Backend struct {
+	i    int
 	load int
 	R    *httputil.ReverseProxy
 }
@@ -31,4 +32,17 @@ func (p *Pool) Less(i, j int) bool {
 
 func (p *Pool) Swap(i, j int) {
 	(*p)[i], (*p)[j] = (*p)[j], (*p)[i]
+}
+
+func (p *Pool) Push(x interface{}) {
+	b := x.(*Backend)
+	b.i = p.Len()
+	*p = append(*p, b)
+}
+
+func (p *Pool) Pop() interface{} {
+	b := (*p)[p.Len()-1]
+	b.i = -1
+	(*p) = (*p)[:p.Len()-1]
+	return b
 }
