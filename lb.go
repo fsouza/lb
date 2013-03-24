@@ -71,3 +71,10 @@ func NewLoadBalancer(hosts ...string) (*LoadBalancer, error) {
 	}
 	return &lb, nil
 }
+
+func (l *LoadBalancer) Handle(w http.ResponseWriter, r *http.Request) {
+	b := heap.Pop(&l.p).(*Backend)
+	go b.handle(w, r, l.done)
+	b.load++
+	heap.Push(&l.p, b)
+}

@@ -211,3 +211,37 @@ func TestNewLoadBalancerInvalidURL(t *testing.T) {
 		t.Errorf("Want <nil>. Got %#v.", *lb)
 	}
 }
+
+func TestLoadBalancerHandle(t *testing.T) {
+	h1 := &FakeHandler{msg: []byte("Hello from server 1.")}
+	h2 := &FakeHandler{msg: []byte("Hello from server 2.")}
+	server1 := httptest.NewServer(h1)
+	defer server1.Close()
+	server2 := httptest.NewServer(h2)
+	defer server2.Close()
+	req, _ := http.NewRequest("GET", "http://globo.com/something/wrong", nil)
+	recorder := httptest.NewRecorder()
+	lb, err := NewLoadBalancer(server1.URL, server2.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lb.Handle(recorder, req)
+	<-lb.done
+	var h *FakeHandler
+	if len(h1.requests) > 0 {
+		h = h1
+	} else {
+		h = h2
+	}
+	body := recorder.Body.String()
+	if body != string(h.msg) {
+		t.Errorf("Wrong response. Want %q. Got %q.", h.msg, body)
+	}
+	req = h.requests[0]
+	if req.URL.Path != "/something/wrong" {
+		t.Errorf("Wrong request path. Want %q. Got %q.", "/something/wrong", req.URL.Path)
+	}
+	if req.Method != "GET" {
+		t.Errorf("Wrong request method. Want %q. Got %q.", "GET", req.Method)
+	}
+}
