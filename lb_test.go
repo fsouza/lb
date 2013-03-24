@@ -212,7 +212,7 @@ func TestNewLoadBalancerInvalidURL(t *testing.T) {
 	}
 }
 
-func TestLoadBalancerHandle(t *testing.T) {
+func TestLoadBalancerServeHTTP(t *testing.T) {
 	h1 := &FakeHandler{msg: []byte("Hello from server 1.")}
 	h2 := &FakeHandler{msg: []byte("Hello from server 2.")}
 	server1 := httptest.NewServer(h1)
