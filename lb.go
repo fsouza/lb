@@ -12,19 +12,19 @@ import (
 	"sync"
 )
 
-type Backend struct {
+type backend struct {
 	i    int
 	load counter
 	r    *httputil.ReverseProxy
 }
 
-func (b *Backend) handle(w http.ResponseWriter, r *http.Request, done chan<- *Backend) {
+func (b *backend) handle(w http.ResponseWriter, r *http.Request, done chan<- *backend) {
 	b.r.ServeHTTP(w, r)
 	done <- b
 }
 
 type Pool struct {
-	backends []*Backend
+	backends []*backend
 	mut      sync.Mutex
 }
 
@@ -43,7 +43,7 @@ func (p *Pool) Swap(i, j int) {
 }
 
 func (p *Pool) Push(x interface{}) {
-	b := x.(*Backend)
+	b := x.(*backend)
 	b.i = p.Len()
 	p.mut.Lock()
 	defer p.mut.Unlock()
@@ -63,35 +63,35 @@ func (p *Pool) Pop() interface{} {
 
 type LoadBalancer struct {
 	p    Pool
-	done chan *Backend
+	done chan *backend
 }
 
 func NewLoadBalancer(hosts ...string) (*LoadBalancer, error) {
-	backends := make([]*Backend, 0, len(hosts))
+	backends := make([]*backend, 0, len(hosts))
 	p := Pool{backends: backends}
 	lb := LoadBalancer{
 		p:    p,
-		done: make(chan *Backend, len(hosts)),
+		done: make(chan *backend, len(hosts)),
 	}
 	for _, h := range hosts {
 		u, err := url.Parse(h)
 		if err != nil {
 			return nil, err
 		}
-		heap.Push(&lb.p, &Backend{r: httputil.NewSingleHostReverseProxy(u)})
+		heap.Push(&lb.p, &backend{r: httputil.NewSingleHostReverseProxy(u)})
 	}
 	go lb.handleFinishes()
 	return &lb, nil
 }
 
 func (l *LoadBalancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	b := heap.Pop(&l.p).(*Backend)
+	b := heap.Pop(&l.p).(*backend)
 	go b.handle(w, r, l.done)
 	b.load.increment()
 	heap.Push(&l.p, b)
 }
 
-func (l *LoadBalancer) requestFinished(b *Backend) {
+func (l *LoadBalancer) requestFinished(b *backend) {
 	heap.Remove(&l.p, b.i)
 	b.load.decrement()
 	heap.Push(&l.p, b)

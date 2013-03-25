@@ -31,11 +31,11 @@ func TestBackendHandle(t *testing.T) {
 	server := httptest.NewServer(&handler)
 	defer server.Close()
 	u, _ := url.Parse(server.URL)
-	b := Backend{r: httputil.NewSingleHostReverseProxy(u)}
+	b := backend{r: httputil.NewSingleHostReverseProxy(u)}
 	path := "/hello"
 	req, _ := http.NewRequest("GET", path, nil)
 	recorder := httptest.NewRecorder()
-	done := make(chan *Backend, 1)
+	done := make(chan *backend, 1)
 	b.handle(recorder, req, done)
 	b2 := <-done
 	if &b != b2 {
@@ -55,7 +55,7 @@ func TestBackendHandle(t *testing.T) {
 }
 
 func TestPoolLen(t *testing.T) {
-	b := []*Backend{
+	b := []*backend{
 		{load: counter{1}},
 		{load: counter{2}},
 		{load: counter{3}},
@@ -67,7 +67,7 @@ func TestPoolLen(t *testing.T) {
 }
 
 func TestPoolLess(t *testing.T) {
-	b := []*Backend{
+	b := []*backend{
 		{load: counter{2}},
 		{load: counter{1}},
 		{load: counter{3}},
@@ -94,7 +94,7 @@ func TestPoolLess(t *testing.T) {
 }
 
 func TestPoolSwap(t *testing.T) {
-	b := []*Backend{
+	b := []*backend{
 		{load: counter{2}},
 		{load: counter{1}},
 		{load: counter{3}},
@@ -119,9 +119,9 @@ func TestPoolSwap(t *testing.T) {
 }
 
 func TestPoolPush(t *testing.T) {
-	bs := make([]*Backend, 0, 1)
+	bs := make([]*backend, 0, 1)
 	p := Pool{backends: bs}
-	b := Backend{i: -1}
+	b := backend{i: -1}
 	p.Push(&b)
 	if b.i != 0 {
 		t.Errorf("p.Push() should set Backend.i. Want %d. Got %d.", 0, b.i)
@@ -132,13 +132,13 @@ func TestPoolPush(t *testing.T) {
 }
 
 func TestPoolPop(t *testing.T) {
-	bs := []*Backend{
+	bs := []*backend{
 		{load: counter{2}, i: 0},
 		{load: counter{1}, i: 1},
 		{load: counter{0}, i: 2},
 	}
 	p := Pool{backends: bs}
-	b := p.Pop().(*Backend)
+	b := p.Pop().(*backend)
 	if b.i != -1 {
 		t.Errorf("p.Pop() did not unset i. Want %d. Got %d.", -1, b.i)
 	}
@@ -152,14 +152,14 @@ func TestPoolPop(t *testing.T) {
 
 func TestPoolPQ(t *testing.T) {
 	expected := []int64{5, 6, 14, 1, 2, 0, 4}
-	bs := make([]*Backend, 0, len(expected))
+	bs := make([]*backend, 0, len(expected))
 	p := Pool{backends: bs}
 	for i, e := range expected {
-		heap.Push(&p, &Backend{i: i, load: counter{e}})
+		heap.Push(&p, &backend{i: i, load: counter{e}})
 	}
 	sorted := []int64{0, 1, 2, 4, 5, 6, 14}
 	for _, e := range sorted {
-		b := heap.Pop(&p).(*Backend)
+		b := heap.Pop(&p).(*backend)
 		if b.load.val() != e {
 			t.Errorf("Did not return the proper backend. Want %d. Got %d.", e, b.load)
 		}
@@ -168,10 +168,10 @@ func TestPoolPQ(t *testing.T) {
 
 func BenchmarkPoolPushAndPop(b *testing.B) {
 	for i := 1; i < b.N; i++ {
-		bs := make([]*Backend, 0, i/2)
+		bs := make([]*backend, 0, i/2)
 		p := Pool{backends: bs}
 		for j := 0; j < i/2; j++ {
-			heap.Push(&p, &Backend{i: j, load: counter{int64(i + j)}})
+			heap.Push(&p, &backend{i: j, load: counter{int64(i + j)}})
 		}
 		for j := 0; j < i/2; j++ {
 			heap.Pop(&p)
@@ -269,7 +269,7 @@ func TestLoadBalancerHandleFinishes(t *testing.T) {
 	if b.load.val() != 0 {
 		t.Errorf("Wrong load after requestFinished. Want %d. Got %d", 0, b.load.val())
 	}
-	b2 := lb.p.Pop().(*Backend)
+	b2 := lb.p.Pop().(*backend)
 	if !reflect.DeepEqual(b2, b) {
 		t.Errorf("Wrong backend after requestFinished. Want %#v. Got %#v", b, b2)
 	}
