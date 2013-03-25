@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package lb contains an HTTP load balancer implementation.
+//
+// It was developed for teaching purposes, prepared for a Go workshop at
+// Globo.com.
 package lb
 
 import (
@@ -61,11 +65,18 @@ func (p *pool) Pop() interface{} {
 	return b
 }
 
+// LoadBalancer represents an HTTP load balancer. It implements a fair
+// scheduling model, dispatching new requests to the backend with least load.
+//
+// It implements http.Handler, so you can map a resource in a Go HTTP server to
+// a load balancer.
 type LoadBalancer struct {
 	p    pool
 	done chan *backend
 }
 
+// NewLoadBalancer returns a new instance of a LoadBalancer. It receives one or
+// more hosts (represented by URLs), and balances the load between them.
 func NewLoadBalancer(hosts ...string) (*LoadBalancer, error) {
 	backends := make([]*backend, 0, len(hosts))
 	p := pool{backends: backends}
