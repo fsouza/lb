@@ -1,3 +1,3 @@
 language: go
-install: go install
-script: go test
+install: go get github.com/fsouza/lb
+script: go test github.com/fsouza/lb
