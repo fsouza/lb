@@ -60,7 +60,7 @@ func TestPoolLen(t *testing.T) {
 		{load: counter{2}},
 		{load: counter{3}},
 	}
-	p := Pool{backends: b}
+	p := pool{backends: b}
 	if p.Len() != len(b) {
 		t.Errorf("Pool.Len: Want %d. Got %d.", len(b), p.Len())
 	}
@@ -72,7 +72,7 @@ func TestPoolLess(t *testing.T) {
 		{load: counter{1}},
 		{load: counter{3}},
 	}
-	p := Pool{backends: b}
+	p := pool{backends: b}
 	tests := []struct {
 		i, j int
 		less bool
@@ -99,7 +99,7 @@ func TestPoolSwap(t *testing.T) {
 		{load: counter{1}},
 		{load: counter{3}},
 	}
-	p := Pool{backends: b}
+	p := pool{backends: b}
 	tests := []struct {
 		i, j int
 		less bool
@@ -120,7 +120,7 @@ func TestPoolSwap(t *testing.T) {
 
 func TestPoolPush(t *testing.T) {
 	bs := make([]*backend, 0, 1)
-	p := Pool{backends: bs}
+	p := pool{backends: bs}
 	b := backend{i: -1}
 	p.Push(&b)
 	if b.i != 0 {
@@ -137,7 +137,7 @@ func TestPoolPop(t *testing.T) {
 		{load: counter{1}, i: 1},
 		{load: counter{0}, i: 2},
 	}
-	p := Pool{backends: bs}
+	p := pool{backends: bs}
 	b := p.Pop().(*backend)
 	if b.i != -1 {
 		t.Errorf("p.Pop() did not unset i. Want %d. Got %d.", -1, b.i)
@@ -153,7 +153,7 @@ func TestPoolPop(t *testing.T) {
 func TestPoolPQ(t *testing.T) {
 	expected := []int64{5, 6, 14, 1, 2, 0, 4}
 	bs := make([]*backend, 0, len(expected))
-	p := Pool{backends: bs}
+	p := pool{backends: bs}
 	for i, e := range expected {
 		heap.Push(&p, &backend{i: i, load: counter{e}})
 	}
@@ -169,7 +169,7 @@ func TestPoolPQ(t *testing.T) {
 func BenchmarkPoolPushAndPop(b *testing.B) {
 	for i := 1; i < b.N; i++ {
 		bs := make([]*backend, 0, i/2)
-		p := Pool{backends: bs}
+		p := pool{backends: bs}
 		for j := 0; j < i/2; j++ {
 			heap.Push(&p, &backend{i: j, load: counter{int64(i + j)}})
 		}

@@ -23,26 +23,26 @@ func (b *backend) handle(w http.ResponseWriter, r *http.Request, done chan<- *ba
 	done <- b
 }
 
-type Pool struct {
+type pool struct {
 	backends []*backend
 	mut      sync.Mutex
 }
 
-func (p *Pool) Len() int {
+func (p *pool) Len() int {
 	p.mut.Lock()
 	defer p.mut.Unlock()
 	return len(p.backends)
 }
 
-func (p *Pool) Less(i, j int) bool {
+func (p *pool) Less(i, j int) bool {
 	return p.backends[i].load.val() < p.backends[j].load.val()
 }
 
-func (p *Pool) Swap(i, j int) {
+func (p *pool) Swap(i, j int) {
 	p.backends[i], p.backends[j] = p.backends[j], p.backends[i]
 }
 
-func (p *Pool) Push(x interface{}) {
+func (p *pool) Push(x interface{}) {
 	b := x.(*backend)
 	b.i = p.Len()
 	p.mut.Lock()
@@ -51,7 +51,7 @@ func (p *Pool) Push(x interface{}) {
 	p.backends[b.i] = b
 }
 
-func (p *Pool) Pop() interface{} {
+func (p *pool) Pop() interface{} {
 	l := p.Len() - 1
 	p.mut.Lock()
 	b := p.backends[l]
@@ -62,13 +62,13 @@ func (p *Pool) Pop() interface{} {
 }
 
 type LoadBalancer struct {
-	p    Pool
+	p    pool
 	done chan *backend
 }
 
 func NewLoadBalancer(hosts ...string) (*LoadBalancer, error) {
 	backends := make([]*backend, 0, len(hosts))
-	p := Pool{backends: backends}
+	p := pool{backends: backends}
 	lb := LoadBalancer{
 		p:    p,
 		done: make(chan *backend, len(hosts)),

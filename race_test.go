@@ -15,7 +15,7 @@ import (
 
 func TestPoolIsSafe(t *testing.T) {
 	bs := make([]*backend, 0, 200)
-	p := Pool{backends: bs}
+	p := pool{backends: bs}
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
