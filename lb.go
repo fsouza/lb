@@ -97,9 +97,9 @@ func NewLoadBalancer(hosts ...string) (*LoadBalancer, error) {
 
 func (l *LoadBalancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b := heap.Pop(&l.p).(*backend)
-	go b.handle(w, r, l.done)
 	b.load.increment()
 	heap.Push(&l.p, b)
+	b.handle(w, r, l.done)
 }
 
 func (l *LoadBalancer) requestFinished(b *backend) {
