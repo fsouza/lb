@@ -14,10 +14,11 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"sync"
+	"sync/atomic"
 )
 
 type backend struct {
-	i    int
+	i    int32
 	load counter
 	r    *httputil.ReverseProxy
 }
@@ -48,11 +49,12 @@ func (p *pool) Swap(i, j int) {
 
 func (p *pool) Push(x interface{}) {
 	b := x.(*backend)
-	b.i = p.Len()
+	n := p.Len()
+	atomic.StoreInt32(&b.i, int32(n))
 	p.mut.Lock()
 	defer p.mut.Unlock()
-	p.backends = p.backends[:b.i+1]
-	p.backends[b.i] = b
+	p.backends = p.backends[:n+1]
+	p.backends[n] = b
 }
 
 func (p *pool) Pop() interface{} {
@@ -61,7 +63,7 @@ func (p *pool) Pop() interface{} {
 	b := p.backends[l]
 	p.backends = p.backends[:l]
 	p.mut.Unlock()
-	b.i = -1
+	atomic.StoreInt32(&b.i, -1)
 	return b
 }
 
@@ -103,7 +105,8 @@ func (l *LoadBalancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *LoadBalancer) requestFinished(b *backend) {
-	heap.Remove(&l.p, b.i)
+	index := atomic.LoadInt32(&b.i)
+	heap.Remove(&l.p, int(index))
 	b.load.decrement()
 	heap.Push(&l.p, b)
 }

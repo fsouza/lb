@@ -155,7 +155,7 @@ func TestPoolPQ(t *testing.T) {
 	bs := make([]*backend, 0, len(expected))
 	p := pool{backends: bs}
 	for i, e := range expected {
-		heap.Push(&p, &backend{i: i, load: counter{e}})
+		heap.Push(&p, &backend{i: int32(i), load: counter{e}})
 	}
 	sorted := []int64{0, 1, 2, 4, 5, 6, 14}
 	for _, e := range sorted {
@@ -171,7 +171,7 @@ func BenchmarkPoolPushAndPop(b *testing.B) {
 		bs := make([]*backend, 0, i/2)
 		p := pool{backends: bs}
 		for j := 0; j < i/2; j++ {
-			heap.Push(&p, &backend{i: j, load: counter{int64(i + j)}})
+			heap.Push(&p, &backend{i: int32(j), load: counter{int64(i + j)}})
 		}
 		for j := 0; j < i/2; j++ {
 			heap.Pop(&p)
