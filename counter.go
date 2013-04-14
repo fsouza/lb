@@ -21,19 +21,9 @@ func (c *counter) val() int64 {
 }
 
 func (c *counter) increment() {
-	old := atomic.LoadInt64(&c.v)
-	swapped := atomic.CompareAndSwapInt64(&c.v, old, old+1)
-	for !swapped {
-		old = atomic.LoadInt64(&c.v)
-		swapped = atomic.CompareAndSwapInt64(&c.v, old, old+1)
-	}
+	atomic.AddInt64(&c.v, 1)
 }
 
 func (c *counter) decrement() {
-	old := atomic.LoadInt64(&c.v)
-	swapped := atomic.CompareAndSwapInt64(&c.v, old, old-1)
-	for !swapped {
-		old = atomic.LoadInt64(&c.v)
-		swapped = atomic.CompareAndSwapInt64(&c.v, old, old-1)
-	}
+	atomic.AddInt64(&c.v, -1)
 }
