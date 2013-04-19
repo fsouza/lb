@@ -44,7 +44,11 @@ func (p *pool) Less(i, j int) bool {
 }
 
 func (p *pool) Swap(i, j int) {
+	p.mut.Lock()
 	p.backends[i], p.backends[j] = p.backends[j], p.backends[i]
+	p.mut.Unlock()
+	atomic.StoreInt32(&p.backends[i].i, int32(i))
+	atomic.StoreInt32(&p.backends[j].i, int32(j))
 }
 
 func (p *pool) Push(x interface{}) {
